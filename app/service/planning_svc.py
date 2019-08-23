@@ -37,8 +37,8 @@ class PlanningService(BaseService):
             while next((True for lnk in op['chain'] if lnk['id'] == agent_links[-1]['id'] and not lnk['finish']), False):
                 await asyncio.sleep(3)
                 last_seen = datetime.strptime(member['last_seen'], '%Y-%m-%d %H:%M:%S')
-                if last_seen + timedelta(seconds=60) < datetime.now():
-                    self.log.debug('Have not seen %s in > 60 seconds' % member['paw'])
+                if last_seen + timedelta(minutes=30) < datetime.now():
+                    self.log.debug('Have not seen %s in > 30 minutes' % member['paw'])
                     break
                 op = (await self.get_service('data_svc').explode_operation(dict(id=operation['id'])))[0]
 
