@@ -15,10 +15,6 @@ class PlanningService(BaseService):
 
     async def select_links(self, operation, agent, phase):
         phase_abilities = [i for p, v in operation['adversary']['phases'].items() if p <= phase for i in v]
-        for p in phase_abilities:
-            for executor in p['executors'].values():
-                if agent['platform'] == p['platform'] and agent['executor'] == p['executor']:
-                    pass
         phase_abilities[:] = [p for p in phase_abilities if
                               agent['platform'] == p['platform'] and agent['executor'] == p['executor']]
         links = []
