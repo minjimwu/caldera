@@ -36,7 +36,8 @@ class DataService(BaseService):
                                                           test=encoded_test.decode(), description=ab.get('description'),
                                                           executor=e, name=ab['name'], platform=pl,
                                                           cleanup=b64encode(
-                                                              info['cleanup'].strip().encode('utf-8')).decode() if info.get(
+                                                              info['cleanup'].strip().encode(
+                                                                  'utf-8')).decode() if info.get(
                                                               'cleanup') else None,
                                                           payload=info.get('payload'), parser=info.get('parser'))
 
@@ -127,20 +128,25 @@ class DataService(BaseService):
     """ VIEW """
 
     async def explode_abilities(self, criteria=None):
-        abilities = await self.dao.get('core_ability', criteria=criteria)
-        for ab in abilities:
-            ab['cleanup'] = '' if ab['cleanup'] is None else ab['cleanup']
-            ab['parser'] = await self.dao.get('core_parser', dict(ability=ab['id']))
-            ab['payload'] = await self.dao.get('core_payload', dict(ability=ab['id']))
-        return abilities
+        abilities = defaultdict()
+        for a in await self.dao.get('core_ability', criteria=criteria):
+            if not abilities.get(a['ability_id']):
+                abilities[a['ability_id']] = dict(name=a['name'], description=a['description'], tactic=a['tactic'],
+                                                  technique_name=a['technique_name'], technique_id=a['technique_id'],
+                                                  ability_id=a['ability_id'], executors=[])
+            executor = dict(platform=a['platform'], executor=a['executor'], test=a['test'])
+            executor['cleanup'] = '' if a['cleanup'] is None else a['cleanup']
+            executor['parser'] = await self.dao.get('core_parser', dict(ability=a['id']))
+            executor['payload'] = await self.dao.get('core_payload', dict(ability=a['id']))
+            abilities[a['ability_id']]['executors'].append(executor)
+        return dict(abilities)
 
     async def explode_adversaries(self, criteria=None):
         adversaries = await self.dao.get('core_adversary', criteria)
         for adv in adversaries:
             phases = defaultdict(list)
             for t in await self.dao.get('core_adversary_map', dict(adversary_id=adv['id'])):
-                for ability in await self.explode_abilities(dict(ability_id=t['ability_id'])):
-                    phases[t['phase']].append(ability)
+                phases[t['phase']].append(await self.explode_abilities(dict(ability_id=t['ability_id'])))
             adv['phases'] = dict(phases)
         return adversaries
 
