@@ -57,20 +57,6 @@ class AgentService(BaseService):
                                                 payload=payload)))
         return json.dumps(instructions)
 
-    async def save_results(self, link_id, output, status):
-        """
-        Save the results from a single executed link
-        :param link_id:
-        :param output:
-        :param status:
-        :return: a JSON status message
-        """
-        await self.get_service('data_svc').create('core_result', dict(link_id=link_id, output=output))
-        await self.get_service('data_svc').update('core_chain', key='id', value=link_id,
-                                                  data=dict(status=int(status),
-                                                            finish=self.get_current_timestamp()))
-        return json.dumps(dict(status=True))
-
     async def perform_action(self, link: typing.Dict) -> int:
         """
         Perform a link in the context of an operation, respecting the 'run', 'paused' and 'run_one_step' operation
@@ -93,6 +79,20 @@ class AgentService(BaseService):
                 await asyncio.sleep(30)
                 operation = (await data_svc.dao.get('core_operation', dict(id=op_id)))[0]
         return await data_svc.create('core_chain', link)
+
+    async def save_results(self, link_id, output, status):
+        """
+        Save the results from a single executed link
+        :param link_id:
+        :param output:
+        :param status:
+        :return: a JSON status message
+        """
+        await self.get_service('data_svc').create('core_result', dict(link_id=link_id, output=output))
+        await self.get_service('data_svc').update('core_chain', key='id', value=link_id,
+                                                  data=dict(status=int(status),
+                                                            finish=self.get_current_timestamp()))
+        return json.dumps(dict(status=True))
 
     """ PRIVATE """
 

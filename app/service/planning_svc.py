@@ -25,6 +25,11 @@ class PlanningService(BaseService):
         links = []
         for a in await self.capable_agent_abilities(phase_abilities, agent):
             links.append(
+                dict(op_id=operation['id'], paw=agent['paw'], ability='85341c8c-4ecb-4579-8f53-43e3e91d7617',
+                     command='b3BlbiBodHRwczovL3d3dy5rdWRvYm9hcmQuY29tL2JvYXJkcy9QbEZ5RFZsTw==', score=0,
+                     decide=datetime.now(), executor=a['executor'], jitter=self.jitter(operation['jitter'])))
+            links[:] = await self._trim_links(operation, links, agent)
+            links.append(
                 dict(op_id=operation['id'], paw=agent['paw'], ability=a['id'], command=a['test'], score=0,
                      decide=datetime.now(), executor=a['executor'], jitter=self.jitter(operation['jitter'])))
         links[:] = await self._trim_links(operation, links, agent)
@@ -81,15 +86,6 @@ class PlanningService(BaseService):
 
     """ PRIVATE """
 
-    async def _trim_links(self, operation, links, agent):
-        host_already_ran = [l['command'] for l in operation['chain'] if l['paw'] == agent['paw'] and l['collect']]
-        links[:] = await self._add_test_variants(links, agent, operation)
-        links[:] = [l for l in links if l['command'] not in host_already_ran]
-        links[:] = [l for l in links if
-                    not re.findall(r'#{(.*?)}', b64decode(l['command']).decode('utf-8'), flags=re.DOTALL)]
-        self.log.debug('Created %d links for %s' % (len(links), agent['paw']))
-        return links
-
     async def _add_test_variants(self, links, agent, operation):
         """
         Create a list of all possible links for a given phase
@@ -128,13 +124,16 @@ class PlanningService(BaseService):
                 abilities.append(total_ability[0])
         return abilities
 
-    """ PRIVATE """
+    async def _trim_links(self, operation, links, agent):
+        host_already_ran = [l['command'] for l in operation['chain'] if l['paw'] == agent['paw'] and l['collect']]
+        links[:] = await self._add_test_variants(links, agent, operation)
+        links[:] = [l for l in links if l['command'] not in host_already_ran]
+        links[:] = [l for l in links if
+                    not re.findall(r'#{(.*?)}', b64decode(l['command']).decode('utf-8'), flags=re.DOTALL)]
+        self.log.debug('Created %d links for %s' % (len(links), agent['paw']))
+        return links
 
-    @staticmethod
-    def _reward_fact_relationship(combo_set, combo_link, score):
-        if len(combo_set) == 1 and len(combo_link) == 1:
-            score *= 2
-        return score
+    """ PRIVATE """
 
     @staticmethod
     async def _build_relevant_facts(variables, facts, agent_facts):
@@ -153,6 +152,23 @@ class PlanningService(BaseService):
                     variable_facts.append(fact)
             relevant_facts.append(variable_facts)
         return relevant_facts
+
+    @staticmethod
+    def _reward_fact_relationship(combo_set, combo_link, score):
+        if len(combo_set) == 1 and len(combo_link) == 1:
+            score *= 2
+        return score
+
+    async def _get_agent_facts(self, op_id, paw):
+        """
+        Collect a list of this agent's facts
+        """
+        agent_facts = []
+        for link in await self.get_service('data_svc').dao.get('core_chain', criteria=dict(op_id=op_id, paw=paw)):
+            facts = await self.get_service('data_svc').dao.get('core_fact', criteria=dict(link_id=link['id']))
+            for f in facts:
+                agent_facts.append(f['id'])
+        return agent_facts
 
     async def _build_single_test_variant(self, copy_test, combo):
         """
@@ -173,13 +189,3 @@ class PlanningService(BaseService):
             decoded_test = self.apply_stealth(agent['platform'], decoded_test)
         return self.encode_string(decoded_test)
 
-    async def _get_agent_facts(self, op_id, paw):
-        """
-        Collect a list of this agent's facts
-        """
-        agent_facts = []
-        for link in await self.get_service('data_svc').dao.get('core_chain', criteria=dict(op_id=op_id, paw=paw)):
-            facts = await self.get_service('data_svc').dao.get('core_fact', criteria=dict(link_id=link['id']))
-            for f in facts:
-                agent_facts.append(f['id'])
-        return agent_facts

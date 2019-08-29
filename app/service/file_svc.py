@@ -70,13 +70,6 @@ class FileSvc(BaseService):
 
     """ PRIVATE """
 
-    async def _create_exfil_sub_directory(self, headers):
-        dir_name = headers.get('X-Request-ID', str(uuid.uuid4()))
-        path = os.path.join(self.exfil_dir, dir_name)
-        if not os.path.exists(path):
-            os.makedirs(path)
-        return path
-
     async def _compile(self, name, platform):
         if name.endswith('.go'):
             if which('go') is not None:
@@ -88,6 +81,13 @@ class FileSvc(BaseService):
                                (name, platform, md5(open(output, 'rb').read()).hexdigest()))
             return '%s-%s' % (name, platform)
         return name
+
+    async def _create_exfil_sub_directory(self, headers):
+        dir_name = headers.get('X-Request-ID', str(uuid.uuid4()))
+        path = os.path.join(self.exfil_dir, dir_name)
+        if not os.path.exists(path):
+            os.makedirs(path)
+        return path
 
     @staticmethod
     async def _change_file_hash(file_path, size=30):

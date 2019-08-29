@@ -18,15 +18,6 @@ class OperationService(BaseService):
                               FINISHED='finished')
         self.data_svc = self.get_service('data_svc')
 
-    async def resume(self):
-        """
-        Resume an operation that was stopped
-        :return: None
-        """
-        for op in await self.data_svc.explode_operation():
-            if not op['finish']:
-                self.loop.create_task(self.run(op['id']))
-
     async def close_operation(self, operation):
         """
         Perform all close actions for an operation
@@ -39,6 +30,15 @@ class OperationService(BaseService):
         await self.data_svc.update('core_operation', key='id', value=operation['id'], data=update)
         report = await self.generate_operation_report(operation['id'])
         await self._write_report(report)
+
+    async def resume(self):
+        """
+        Resume an operation that was stopped
+        :return: None
+        """
+        for op in await self.data_svc.explode_operation():
+            if not op['finish']:
+                self.loop.create_task(self.run(op['id']))
 
     async def run(self, op_id):
         """

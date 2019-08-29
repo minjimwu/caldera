@@ -189,6 +189,15 @@ class DataService(BaseService):
         return await self.dao.create('core_fact', dict(property=property, value=value, source_id=source_id,
                                                        score=score, set_id=set_id, link_id=link_id))
 
+    async def create(self, table, data):
+        """
+        Create a new object in the database
+        :param table:
+        :param data:
+        :return: the database id
+        """
+        return await self.dao.create(table, data)
+
     async def create_agent(self, agent, executors):
         """
         Save a new agent to the database
@@ -201,15 +210,6 @@ class DataService(BaseService):
             await self.dao.create('core_executor', dict(agent_id=agent_id, executor=e, preferred=1 if i == 0 else 0))
         return agent_id
 
-    async def create(self, table, data):
-        """
-        Create a new object in the database
-        :param table:
-        :param data:
-        :return: the database id
-        """
-        return await self.dao.create(table, data)
-
     """ VIEW """
 
     async def get(self, table, criteria):
@@ -220,19 +220,6 @@ class DataService(BaseService):
         :return: a list of dictionary results
         """
         return await self.dao.get(table, criteria)
-
-    async def explode_abilities(self, criteria=None):
-        """
-        Get all - or a filtered list of - abilities, built out with all sub-objects
-        :param criteria:
-        :return: a list of dictionary results
-        """
-        abilities = await self.dao.get('core_ability', criteria=criteria)
-        for ab in abilities:
-            ab['cleanup'] = '' if ab['cleanup'] is None else ab['cleanup']
-            ab['parser'] = await self.dao.get('core_parser', dict(ability=ab['id']))
-            ab['payload'] = await self.dao.get('core_payload', dict(ability=ab['id']))
-        return abilities
 
     async def explode_adversaries(self, criteria=None):
         """
@@ -264,6 +251,19 @@ class DataService(BaseService):
             sources = await self.dao.get('core_source_map', dict(op_id=op['id']))
             op['facts'] = await self.dao.get_in('core_fact', 'source_id', [s['source_id'] for s in sources])
         return operations
+
+    async def explode_abilities(self, criteria=None):
+        """
+        Get all - or a filtered list of - abilities, built out with all sub-objects
+        :param criteria:
+        :return: a list of dictionary results
+        """
+        abilities = await self.dao.get('core_ability', criteria=criteria)
+        for ab in abilities:
+            ab['cleanup'] = '' if ab['cleanup'] is None else ab['cleanup']
+            ab['parser'] = await self.dao.get('core_parser', dict(ability=ab['id']))
+            ab['payload'] = await self.dao.get('core_payload', dict(ability=ab['id']))
+        return abilities
 
     async def explode_agents(self, criteria: object = None) -> object:
         """

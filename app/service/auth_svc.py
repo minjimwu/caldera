@@ -48,6 +48,18 @@ class AuthService(BaseService):
         await forget(request, web.Response())
         raise web.HTTPFound('/login')
 
+    @staticmethod
+    async def check_permissions(request):
+        """
+        Check if a request is allowed based on the user permissions
+        :param request:
+        :return: None
+        """
+        try:
+            await check_permission(request, 'admin')
+        except (HTTPUnauthorized, HTTPForbidden):
+            raise web.HTTPFound('/login')
+
     async def login_user(self, request):
         """
         Log a user in and save the session
@@ -62,18 +74,6 @@ class AuthService(BaseService):
             await remember(request, response, data.get('username'))
             return response
         raise web.HTTPFound('/login')
-
-    @staticmethod
-    async def check_permissions(request):
-        """
-        Check if a request is allowed based on the user permissions
-        :param request:
-        :return: None
-        """
-        try:
-            await check_permission(request, 'admin')
-        except (HTTPUnauthorized, HTTPForbidden):
-            raise web.HTTPFound('/login')
 
     """ PRIVATE """
 
