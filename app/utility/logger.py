@@ -12,14 +12,14 @@ class Logger:
         handler.setFormatter(logging.Formatter('%(asctime)s: %(message)s', '%Y-%m-%d %H:%M:%S'))
         self.logger.addHandler(handler)
 
-    def debug(self, msg):
-        self.logger.debug(msg)
-
-    def info(self, msg):
-        self.logger.info(msg)
-
     def warning(self, msg):
         self.logger.warning(msg)
 
     def error(self, msg):
         self.logger.error(msg)
+
+    def debug(self, msg):
+        self.logger.debug(msg)
+
+    def info(self, msg):
+        self.logger.info(msg)

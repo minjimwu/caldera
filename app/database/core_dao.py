@@ -12,12 +12,6 @@ class CoreDao:
     async def build(self, schema):
         await self.db.build(schema)
 
-    async def get(self, table, criteria=None):
-        return await self.db.get(table, criteria)
-
-    async def create(self, table, data):
-        return await self.db.create(table, data)
-
     async def delete(self, table, data):
         return await self.db.delete(table, data)
 
@@ -26,3 +20,9 @@ class CoreDao:
 
     async def get_in(self, table, field, elements):
         return await self.db.get_in(table, field, elements)
+
+    async def get(self, table, criteria=None):
+        return await self.db.get(table, criteria)
+
+    async def create(self, table, data):
+        return await self.db.create(table, data)
